@@ -638,6 +638,10 @@ def save_results(result: QAOAResult, portfolio_data=None):
         pd.DataFrame([metrics]).to_excel(writer, sheet_name="Metrics", index=False)
         counts.to_excel(writer, sheet_name="QAOA_Samples", index=False)
 
+    print(
+            f"\nSaved to {Quantum_Result_File}"
+        )
+
     return Quantum_Result_File
 
 # Backward-compatible alias expected by run.py.
@@ -646,6 +650,10 @@ solve = solve_quantum
 
 if __name__ == "__main__":
     result = solve_quantum()
+
+    # Save the quantum optimization result
+    save_results(result)
+    
     print("\n==============================")
     print("CVaR-QAOA RESULT")
     print("==============================")

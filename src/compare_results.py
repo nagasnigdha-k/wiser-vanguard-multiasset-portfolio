@@ -37,8 +37,8 @@ PROJECT_ROOT = os.path.dirname(
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from config import *
-
+from config.settings import DATA_DIR
+from src.data_loader import load_portfolio_data
 
 from config.constraints import (
     BUDGET,
