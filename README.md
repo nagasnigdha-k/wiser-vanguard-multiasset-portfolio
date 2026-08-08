@@ -293,6 +293,11 @@ This is deliberately aligned with the challenge requirement that a strong risk-a
 - The Streamlit application exposes investment preferences but keeps QAOA depth, CVaR alpha, and shots fixed in code.
 - `gurobipy` requires a working Gurobi installation/license in the execution environment.
 
+## Note
+
+The full potential of hybrid CVaR-QAOA has not yet been explored. Higher QAOA depths, different CVaR settings, increased measurement shots, and quantum-hardware execution are planned as future work.
+
+
 ## License / challenge context
 
 Developed for the WISER / Vanguard 2026 challenge as a research and demonstration prototype.

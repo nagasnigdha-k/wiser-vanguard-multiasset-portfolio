@@ -1,4 +1,4 @@
-# WISER / Vanguard Multi-Asset Portfolio — Walkthrough
+# WISER - Vanguard Multi-Asset Portfolio — Walkthrough
 
 This walkthrough helps to understand what to run, what each stage does, and how the implementation maps to the portfolio-optimization agenda.
 
