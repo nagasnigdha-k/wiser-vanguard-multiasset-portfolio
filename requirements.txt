@@ -1,4 +1,6 @@
 numpy
+scipy
+yfinance
 pandas
 openpyxl
 gurobipy

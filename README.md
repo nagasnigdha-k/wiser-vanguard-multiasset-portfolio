@@ -1,280 +1,298 @@
-# wiser-vanguard-multiasset-portfolio
-WISER Vanguard 2026 challenge repository for multi-asset portfolio construction using classical, quantum, and hybrid optimization techniques with benchmarking and financial analytics.
+# WISER / Vanguard Multi-Asset Portfolio Co-Pilot
 
+Multi-asset portfolio construction using a classical MIQP optimizer and a hybrid CVaR-QAOA + SLSQP optimizer, with a Streamlit portfolio co-pilot for comparing the two approaches.
 
-Materials covered-
-- 'config/assets.py' - This file defines the assets used for multi-asset portfolio optimization.
-- 'config/constraints.py' - This file defines the constraints used for multi-asset portfolio optimization.
-- 'config/init.py' - This file initializes the configuration package for the multi-asset portfolio optimization project.
-- 'config/settings.py' - This file contains general settings for the portfolio optimization project, including the date range for data retrieval, the number of trading days in a year, 
-the risk-free rate, the initial portfolio value, transaction costs, the output file path, and a random seed for reproducibility.
-- 'config/user_inputs.py' - This file defines the user inputs for multi-asset portfolio optimization.
+This repository is structured around the challenge workflow:
 
+1. Define the portfolio optimization problem with binary asset-selection variables, continuous weights, linear constraints, and a quadratic risk objective.
+2. Convert the binary selection component into a QUBO and Ising Hamiltonian suitable for QAOA.
+3. Generate a reproducible portfolio dataset from a configurable asset universe.
+4. Run a classical MIQP benchmark.
+5. Run hybrid CVaR-QAOA asset selection followed by classical continuous-weight refinement.
+6. Compare return, risk, income, drawdown, transaction cost, feasibility, and objective value.
+7. Validate the selected portfolio against hard constraints.
+8. Present the results through the Streamlit portfolio co-pilot.
 
+## Quick start
 
-'src/generate_portfolio_data.py' - This file downloads historical market data from Yahoo Finance, calculates portfolio statistics, and stores everything in 'data/Portfolio_Data.xlsx'.
+From the repository root:
 
-
-# wiser-vanguard-multiasset-portfolio
-
-## Multi-Asset Portfolio Optimization using Classical, Quantum, and Hybrid CVaR-QAOA
-
-This repository contains the implementation developed for the **WISER Vanguard 2026 Challenge**, focusing on **multi-asset portfolio optimization** using classical optimization, quantum optimization (QAOA), and a proposed **Hybrid CVaR-QAOA** framework.
-
-The project combines traditional financial portfolio construction techniques with quantum optimization to investigate how hybrid quantum-classical algorithms can improve combinatorial asset selection while maintaining practical portfolio optimization workflows.
-
----
-
-# Project Objectives
-
-The project aims to:
-
-- Retrieve historical financial market data
-- Compute portfolio statistics from historical prices
-- Formulate the portfolio selection problem as a binary optimization problem
-- Construct a Quadratic Unconstrained Binary Optimization (QUBO) model
-- Convert the QUBO into an Ising Hamiltonian
-- Solve the asset selection problem using QAOA
-- Optimize continuous portfolio weights using classical optimization
-- Benchmark classical and quantum optimization approaches
-- Evaluate portfolio performance using financial metrics
-
----
-
-# Repository Structure
-
+```bash
+pip install -r requirements.txt
 ```
+
+Run the complete command-line pipeline:
+
+```bash
+python run.py
+```
+
+Run the interactive portfolio co-pilot:
+
+```bash
+streamlit run portfolio_copilot.py
+```
+
+The command-line pipeline runs four stages:
+
+```text
+1. Generate Portfolio_Data.xlsx
+        ↓
+2. Classical MIQP
+        ↓
+3. Hybrid CVaR-QAOA + SLSQP
+        ↓
+4. Classical vs Quantum comparison
+```
+
+The Streamlit application provides the same optimization workflow interactively and adds the recommendation/explainability layer.
+
+For a detailed demonstration script, see [`walkthrough.md`](walkthrough.md).
+
+## What the project optimizes
+
+For portfolio weights `w`, the common objective is:
+
+```text
+maximize
+
+α μᵀw
++ β yᵀw
+− λ wᵀΣw
+− γ dᵀw
+− δ cᵀw
+```
+
+where:
+
+- `μ` = expected returns
+- `y` = dividend/income yield
+- `Σ` = covariance matrix
+- `d` = drawdown measure
+- `c` = transaction-cost measure
+- `α` = growth preference
+- `β` = income preference
+- `λ` = risk-aversion preference
+- `γ` = cost sensitivity
+- `δ` = drawdown-control preference
+
+The current hard constraints are:
+
+```text
+Σ wᵢ = 1
+Σ xᵢ = 10
+0.01 xᵢ ≤ wᵢ ≤ 0.40 xᵢ
+Technology exposure ≤ 0.30
+```
+
+Here `xᵢ ∈ {0,1}` indicates whether asset `i` is selected.
+
+The classical optimizer solves the mixed-integer quadratic problem directly.
+
+The hybrid quantum path uses the binary selection problem to construct a QUBO/Ising Hamiltonian, applies a statevector QAOA implementation with CVaR-based parameter optimization, then uses SLSQP to determine continuous weights for the selected assets. Final hard constraints are checked on the continuous portfolio.
+
+## Repository structure
+
+```text
 wiser-vanguard-multiasset-portfolio/
 │
 ├── config/
 │   ├── assets.py
 │   ├── constraints.py
+│   ├── init.py
 │   ├── settings.py
-│   ├── user_inputs.py
-│   └── __init__.py
+│   └── user_inputs.py
+│
+├── data/
+│   ├── Portfolio_Data.xlsx
+│   ├── Classical_Result.xlsx
+│   └── Quantum_Result.xlsx
+│
+├── docs/
+│   └── CVAR_QAOA_IMPLEMENTATION.md
 │
 ├── src/
 │   ├── classical_optimizer.py
 │   ├── compare_results.py
 │   ├── data_loader.py
 │   ├── generate_portfolio_data.py
-│   ├── objective_functions.py 
-│   ├── quantum_optimizer.py
+│   ├── objective_functions.py
+│   └── quantum_optimizer.py
 │
-├── data/
-│   └── Classical_Result_Filea.xlsx (Generated:src/classical_optimizer.py)
-│   └── Portfolio_Data.xlsx         (Generated:src/generate_portfolio_data.py)
-│   └── Quantum_Result_File.xlsx    (Generated:src/quantum_optimizer.py)
-│
-│
+├── portfolio_copilot.py
 ├── requirements.txt
-└── README.md
+├── run.py
+├── README.md
+└── walkthrough.md
 ```
 
----
+## File responsibilities
 
-# Configuration Files
+### `run.py`
 
-## config/assets.py
+Master command-line entry point. It runs:
 
-Defines the investment universe used throughout the project.
+1. `generate_portfolio_data.py`
+2. `classical_optimizer.py`
+3. `quantum_optimizer.py`
+4. `compare_results.py`
 
-This file contains:
+### `portfolio_copilot.py`
 
-- Asset tickers
-- Asset classes
-- Portfolio universe
-- Asset metadata
+Streamlit application.
 
----
+The user controls five investment preferences:
 
-## config/constraints.py
+- Growth
+- Income
+- Drawdown Control
+- Cost Sensitivity
+- Risk Aversion
 
-Defines all portfolio optimization constraints.
+The app then:
 
-Examples include:
+- generates/loads portfolio data,
+- runs the classical optimizer,
+- runs CVaR-QAOA + SLSQP,
+- checks hard constraints,
+- compares the two portfolios,
+- selects a recommendation,
+- explains the trade-offs.
 
-- Budget constraints
-- Position limits
-- Cardinality constraints
-- Asset allocation constraints
-- User-defined portfolio restrictions
+### `config/assets.py`
 
----
+Defines the master asset universe and maps each ticker to:
 
-## config/settings.py
+- broad asset class,
+- allocation group.
 
-Contains the general project settings, including:
+The current universe contains 20 assets.
 
-- Historical data date range
-- Number of trading days per year
-- Risk-free rate
-- Initial portfolio value
-- Transaction costs
-- Output directory
-- Random seed for reproducibility
+### `config/constraints.py`
 
----
+Defines the hard portfolio guardrails:
 
-## config/user_inputs.py
+- budget = 100%
+- cardinality = 10 selected assets
+- minimum selected weight = 1%
+- maximum selected weight = 40%
+- maximum Technology exposure = 30%
 
-Contains configurable user inputs used throughout the optimization workflow.
+### `config/settings.py`
 
-Typical parameters include:
+Stores project paths and quantum experiment defaults.
 
-- Number of assets
-- Target return
-- Risk aversion coefficient
-- Optimization settings
-- Quantum experiment parameters
+### `config/user_inputs.py`
 
----
+Provides default objective weights for non-UI execution.
 
-## config/__init__.py
+### `src/generate_portfolio_data.py`
 
-Initializes the configuration package and enables importing configuration modules across the project.
+Selects a reproducible subset of the master asset universe and downloads market data from Yahoo Finance. It produces:
 
----
+`data/Portfolio_Data.xlsx`
 
-# Source Files
+with sheets for asset data, prices, daily returns, and covariance.
 
-## src/generate_portfolio_data.py
+### `src/data_loader.py`
 
-This module downloads historical market data from Yahoo Finance and generates the dataset used throughout the optimization pipeline.
+Loads the Excel portfolio dataset and converts it into the NumPy structures consumed by both optimizers.
 
-Main tasks include:
+It also aligns the covariance matrix with the exact ticker ordering in `Asset_Data`, which is important for correct quadratic calculations.
 
-- Download historical asset prices
-- Calculate daily returns
-- Compute expected returns
-- Estimate covariance matrix
-- Calculate annualized volatility
-- Generate portfolio statistics
-- Export the processed data to:
+### `src/objective_functions.py`
 
-```
-data/Portfolio_Data.xlsx
-```
+Contains the common portfolio objective and portfolio metric calculations shared by the optimization workflow.
 
-This Excel file serves as the primary input for the optimization pipeline.
+### `src/classical_optimizer.py`
 
----
+Builds and solves the classical MIQP using Gurobi.
 
-# Portfolio Optimization Workflow
+Decision variables:
 
-```
-Historical Market Data
-          │
-          ▼
-Portfolio Statistics
-(Expected Returns, Covariance, Risk)
-          │
-          ▼
-Binary Portfolio Formulation
-          │
-          ▼
-QUBO Construction
-          │
-          ▼
+- `wᵢ`: continuous portfolio weights
+- `xᵢ`: binary selection variables
+
+### `src/quantum_optimizer.py`
+
+Implements the hybrid quantum path:
+
+```text
+Portfolio data
+    ↓
+QUBO coefficients
+    ↓
 Ising Hamiltonian
-          │
-          ▼
-QAOA Optimization
-          │
-          ▼
-Selected Assets
-          │
-          ▼
-Continuous Portfolio Weight Optimization
-          │
-          ▼
-Final Optimized Portfolio
+    ↓
+QAOA statevector simulation
+    ↓
+CVaR objective
+    ↓
+Powell parameter optimization
+    ↓
+Candidate bitstrings
+    ↓
+SLSQP continuous-weight optimization
+    ↓
+Hard-constraint validation
 ```
 
----
+The current implementation uses an in-repository statevector simulator. The Qiskit packages in `requirements.txt` support the project's intended quantum-computing direction, but the current optimizer does not require a Qiskit backend to execute the statevector path.
 
-# Proposed Hybrid CVaR-QAOA Framework
+### `src/compare_results.py`
 
-This repository proposes a **Hybrid CVaR-QAOA** optimization framework for portfolio optimization.
+Loads the classical and quantum Excel outputs and compares:
 
-Unlike conventional QAOA implementations that incorporate all constraints directly into the Hamiltonian, this approach separates the unconstrained quantum optimization from the inequality constraint handling.
+- expected return,
+- risk/volatility,
+- income,
+- drawdown,
+- transaction cost,
+- objective value,
+- selected asset count,
+- Technology exposure,
+- hard-constraint breaches.
 
-The workflow is as follows:
+### `docs/CVAR_QAOA_IMPLEMENTATION.md`
 
-1. Construct the QUBO using only the unconstrained portfolio objective.
-2. Convert the QUBO into an Ising Hamiltonian.
-3. Build the QAOA cost Hamiltonian.
-4. Execute the QAOA circuit.
-5. Measure candidate bit strings.
-6. Compute the Hamiltonian energy for each measured bit string.
-7. Evaluate inequality constraint penalties classically.
-8. Compute the Hybrid objective
+Technical notes on the QUBO → Ising → QAOA/CVaR mapping and the continuous refinement stage.
 
-```
-F(x) = E_H(x) + ρ P_ineq(x)
-```
+## Generated files
 
-where:
+`Portfolio_Data.xlsx` is the optimization input dataset.
 
-- `E_H(x)` is the Hamiltonian energy.
-- `P_ineq(x)` is the classical inequality penalty.
-- `ρ` is the configurable penalty coefficient.
+`Classical_Result.xlsx` contains the classical allocation and metrics.
 
-9. Compute the CVaR using the Hybrid objective values.
-10. Return the Hybrid CVaR to the classical optimizer.
-11. Update only the QAOA parameters `(γ, β)`.
-12. Execute the optimized circuit to obtain candidate portfolios.
-13. Perform continuous portfolio weight optimization on the selected assets.
+`Quantum_Result.xlsx` contains the hybrid quantum allocation, metrics, QAOA parameters, and sampled bitstrings.
 
-In this framework:
+These Excel files are useful as demonstration artifacts. They can also be regenerated by running the pipeline.
 
-- The quantum evolution depends only on the unconstrained Hamiltonian.
-- Inequality constraints influence only the classical optimization process.
-- No slack variables are introduced.
-- The Hamiltonian construction remains unchanged.
+## Data note
 
----
+The current data-generation script uses Yahoo Finance market data rather than a purely synthetic dataset. The asset universe and transaction-cost assumptions are configurable in the repository.
 
-# Technologies Used
+If the challenge submission requires strictly synthetic/anonymized data, replace the data-generation step with a synthetic data generator while keeping the optimizer interfaces unchanged.
 
-- Python
-- NumPy
-- Pandas
-- SciPy
-- yfinance
-- Qiskit
-- Matplotlib
-- OpenPyXL
+## Recommendation logic
 
----
+The Streamlit co-pilot applies the following priority:
 
-# Output
+1. Zero hard-constraint breaches.
+2. Higher preference-weighted objective.
+3. Lower risk.
+4. Higher expected return.
+5. Lower transaction cost.
 
-The project generates:
+This is deliberately aligned with the challenge requirement that a strong risk-adjusted result must not sacrifice hard-constraint feasibility.
 
-- Historical market datasets
-- Portfolio statistics
-- Candidate asset selections
-- Optimized portfolio weights
-- Portfolio return and risk metrics
-- Performance comparison results
-- Visualization plots
+## Important implementation notes
 
----
+- The current quantum implementation is a statevector simulator and limits the problem to `N <= 22` assets.
+- The Technology constraint is enforced during continuous weight optimization and final feasibility checking; it is not represented as a binary selection-only penalty.
+- The classical model directly enforces all hard constraints.
+- The Streamlit application exposes investment preferences but keeps QAOA depth, CVaR alpha, and shots fixed in code.
+- `gurobipy` requires a working Gurobi installation/license in the execution environment.
 
-# Future Enhancements
+## License / challenge context
 
-Planned extensions include:
-
-- Hybrid CVaR-QAOA implementation
-- Additional quantum optimizers
-- Hardware execution support
-- Advanced financial benchmarking
-- Constraint sensitivity analysis
-- Comparative studies with classical optimization algorithms
-
----
-
-# License
-
-This project was developed as part of the **WISER Vanguard 2026 Challenge** for research and educational purposes.
+Developed for the WISER / Vanguard 2026 challenge as a research and demonstration prototype.
