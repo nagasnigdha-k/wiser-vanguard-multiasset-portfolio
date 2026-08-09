@@ -48,6 +48,7 @@ The command-line pipeline runs four stages:
 The Streamlit application provides the same optimization workflow interactively and adds the recommendation/explainability layer.
 
 For a detailed demonstration script, see [`walkthrough.md`](walkthrough.md).
+
 View the Project Documentation (PDF) ['docs/Multi-Asset_Portfolio_Construction_Hybrid_CVaR-QAOA_Report.pdf'](docs/Multi-Asset_Portfolio_Construction_Hybrid_CVaR-QAOA_Report.pdf)
 
 ## What the project optimizes
